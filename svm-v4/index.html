@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Voting Machine</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+</head>
+<body class="public-page">
+
+  <div class="scanlines"></div>
+  <div id="toast-container"></div>
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <div class="logo-mark">
+        <span class="dot dot-green"></span>
+        <span class="dot dot-red"></span>
+      </div>
+      <div>
+        <h1>SMART <span class="accent">VOTING</span> MACHINE</h1>
+        <p class="subtitle">Secure Election System · ESP32 · Fingerprint Verified</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge" id="live-badge">
+        <span class="pulse-ring"></span>
+        <span>LIVE</span>
+      </div>
+      <div class="clock" id="clock">--:--:--</div>
+      <button class="icon-btn theme-btn" onclick="toggleTheme()" id="theme-toggle" title="Toggle Theme">🌙</button>
+      <a href="admin.html" class="admin-link-btn" title="Admin Panel">🔐 Admin</a>
+    </div>
+  </header>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="status-item">
+      <span class="status-label">STATUS</span>
+      <span class="status-val green" id="sys-status">Connecting…</span>
+    </div>
+    <div class="status-divider">|</div>
+    <div class="status-item">
+      <span class="status-label">TOTAL VOTES CAST</span>
+      <span class="status-val accent" id="total-votes">0</span>
+    </div>
+    <div class="status-divider">|</div>
+    <div class="status-item">
+      <span class="status-label">TURNOUT</span>
+      <span class="status-val yellow" id="turnout-pct">0%</span>
+    </div>
+    <div class="status-divider" id="timer-divider" style="display:none">|</div>
+    <div class="status-item" id="timer-item" style="display:none">
+      <span class="status-label">TIME LEFT</span>
+      <span class="status-val red" id="election-timer">—</span>
+    </div>
+  </div>
+
+  <!-- ELECTION CLOSED BANNER -->
+  <div class="election-closed-banner" id="closed-banner" style="display:none">
+    🏁 ELECTION HAS ENDED — RESULTS WILL BE ANNOUNCED BY AUTHORITIES
+  </div>
+
+  <!-- VOTING OPEN BANNER -->
+  <div class="voting-open-banner" id="open-banner" style="display:none">
+    🗳️ VOTING IS NOW OPEN — PLEASE PROCEED TO THE VOTING MACHINE
+  </div>
+
+  <!-- NO CONFIG NOTICE -->
+  <div class="no-config-notice" id="no-config-notice" style="display:none">
+    <span>⚠ Election not configured yet.</span>
+    <a href="admin.html">Go to Admin Panel →</a>
+  </div>
+
+  <!-- TURNOUT BAR -->
+  <div class="turnout-section">
+    <div class="turnout-label">
+      <span>VOTER TURNOUT</span>
+      <span id="turnout-numbers">0 / 100 voters</span>
+    </div>
+    <div class="turnout-track">
+      <div class="turnout-fill" id="turnout-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- VOTING ACTIVE SECTION (shown during election) -->
+  <section class="public-confirm-section" id="confirm-section">
+    <div class="confirm-card">
+      <div class="confirm-icon">🗳️</div>
+      <div class="confirm-title">CAST YOUR VOTE</div>
+      <div class="confirm-body">
+        Please proceed to the fingerprint voting machine to cast your vote.<br/>
+        You will receive a <strong>unique Hash ID</strong> as your receipt.<br/>
+        Keep it safe — you can use it to verify your vote was counted.
+      </div>
+      <div class="confirm-note">
+        🔒 All votes are encrypted and fingerprint-verified<br/>
+        🚫 Individual party counts are hidden to prevent outside influence
+      </div>
+    </div>
+
+    <!-- Candidate list — names only, NO vote counts -->
+    <div class="candidate-list" id="candidate-list">
+      <div class="candidate-row">
+        <div class="cand-row-photo" id="photo-0"><span class="photo-placeholder">🅐</span></div>
+        <div class="cand-row-info">
+          <div class="cand-row-name" id="name-1">Party A</div>
+          <div class="cand-row-field">Candidate 1</div>
+        </div>
+        <div class="cand-row-badge">✓ REGISTERED</div>
+      </div>
+      <div class="candidate-row">
+        <div class="cand-row-photo" id="photo-1"><span class="photo-placeholder">🅑</span></div>
+        <div class="cand-row-info">
+          <div class="cand-row-name" id="name-2">Party B</div>
+          <div class="cand-row-field">Candidate 2</div>
+        </div>
+        <div class="cand-row-badge">✓ REGISTERED</div>
+      </div>
+      <div class="candidate-row">
+        <div class="cand-row-photo" id="photo-2"><span class="photo-placeholder">🅒</span></div>
+        <div class="cand-row-info">
+          <div class="cand-row-name" id="name-3">Party C</div>
+          <div class="cand-row-field">Candidate 3</div>
+        </div>
+        <div class="cand-row-badge">✓ REGISTERED</div>
+      </div>
+    </div>
+
+    <!-- Verify your hash -->
+    <div class="public-verify-box">
+      <div class="public-verify-title">🔍 Verify Your Vote</div>
+      <div class="public-verify-row">
+        <input type="text" id="pub-verify-input" placeholder="Enter your Hash ID e.g. VT-A3F9B2C1" style="text-transform:uppercase"/>
+        <button onclick="publicVerifyVote()">VERIFY</button>
+      </div>
+      <div id="pub-verify-result" class="pub-verify-result"></div>
+    </div>
+  </section>
+
+  <!-- POST-ELECTION SECTION (shown after election ends) -->
+  <section class="post-election-section" id="post-election-section" style="display:none">
+    <div class="post-election-card">
+      <div class="post-election-icon">🏁</div>
+      <h2 class="post-election-title">ELECTION HAS CONCLUDED</h2>
+      <p class="post-election-body">
+        Thank you for participating. The official results will be announced by the Election Commission.<br/>
+        Voters can verify their vote was counted using their Hash ID receipt.
+      </p>
+      <div class="post-election-stats">
+        <div class="post-stat">
+          <div class="post-stat-val" id="post-total">—</div>
+          <div class="post-stat-label">Total Votes Cast</div>
+        </div>
+        <div class="post-stat">
+          <div class="post-stat-val" id="post-turnout">—</div>
+          <div class="post-stat-label">Voter Turnout</div>
+        </div>
+        <div class="post-stat">
+          <div class="post-stat-val" id="post-candidates">3</div>
+          <div class="post-stat-label">Candidates</div>
+        </div>
+      </div>
+      <!-- Verify hash still available post-election -->
+      <div class="public-verify-box" style="margin-top:24px">
+        <div class="public-verify-title">🔍 Verify Your Vote</div>
+        <div class="public-verify-row">
+          <input type="text" id="pub-verify-input-2" placeholder="Enter your Hash ID e.g. VT-A3F9B2C1" style="text-transform:uppercase"/>
+          <button onclick="publicVerifyVote2()">VERIFY</button>
+        </div>
+        <div id="pub-verify-result-2" class="pub-verify-result"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PUBLIC INFO FOOTER -->
+  <div class="public-info-bar">
+    <span>🔒 Votes are fingerprint-verified</span>
+    <span class="dot-sep">◆</span>
+    <span>🚫 Party counts hidden until results announced</span>
+    <span class="dot-sep">◆</span>
+    <span>📡 ThingSpeak IoT Cloud</span>
+  </div>
+
+  <footer>
+    <span>SMART VOTING MACHINE</span>
+    <span class="dot-sep">◆</span>
+    <span>ESP32 + AS608 Fingerprint</span>
+    <span class="dot-sep">◆</span>
+    <span id="footer-year"></span>
+  </footer>
+
+  <script src="shared.js"></script>
+  <script src="public.js"></script>
+</body>
+</html>

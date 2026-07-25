@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel — Smart Voting Machine</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="admin-page">
+
+  <div class="scanlines"></div>
+  <div id="toast-container"></div>
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- ===== LOGIN SCREEN ===== -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-box">
+      <div class="login-icon">🔐</div>
+      <h2>ADMIN ACCESS</h2>
+      <p>Smart Voting Machine — Restricted Area</p>
+      <div class="login-field">
+        <label>PASSWORD</label>
+        <input type="password" id="login-pass" placeholder="Enter admin password" maxlength="30" autocomplete="off"/>
+      </div>
+      <button class="login-btn" onclick="doLogin()">UNLOCK PANEL</button>
+      <div id="login-error" class="login-error"></div>
+      <a href="index.html" class="back-public">← Back to Public Results</a>
+    </div>
+  </div>
+
+  <!-- ===== ADMIN CONTENT (hidden until login) ===== -->
+  <div id="admin-content" class="hidden">
+
+    <!-- HEADER -->
+    <header class="admin-header">
+      <div class="header-left">
+        <div class="logo-mark">
+          <span class="dot dot-green"></span>
+          <span class="dot dot-red"></span>
+        </div>
+        <div>
+          <h1>🔐 ADMIN <span class="accent">PANEL</span></h1>
+          <p class="subtitle">Smart Voting Machine — Restricted Control</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="live-badge"><span class="pulse-ring"></span><span>LIVE</span></div>
+        <div class="clock" id="clock">--:--:--</div>
+        <button class="icon-btn" onclick="toggleTheme()" id="theme-toggle">🌙</button>
+        <a href="index.html" class="back-btn">← Public View</a>
+        <button class="logout-btn" onclick="doLogout()">LOGOUT</button>
+      </div>
+    </header>
+
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+      <div class="status-item"><span class="status-label">CHANNEL</span><span class="status-val" id="channel-id">—</span></div>
+      <div class="status-divider">|</div>
+      <div class="status-item"><span class="status-label">LAST UPDATE</span><span class="status-val" id="last-update">—</span></div>
+      <div class="status-divider">|</div>
+      <div class="status-item"><span class="status-label">TOTAL VOTES</span><span class="status-val accent" id="total-votes">0</span></div>
+      <div class="status-divider">|</div>
+      <div class="status-item"><span class="status-label">TURNOUT</span><span class="status-val yellow" id="turnout-pct">0%</span></div>
+      <div class="status-divider">|</div>
+      <div class="status-item"><span class="status-label">STATUS</span><span class="status-val green" id="sys-status">—</span></div>
+    </div>
+
+    <!-- TABS -->
+    <div class="admin-tabs">
+      <button class="tab-btn active" onclick="switchTab('dashboard')" id="tab-dashboard">📊 Dashboard</button>
+      <button class="tab-btn" onclick="switchTab('config')"    id="tab-config">⚙ Config</button>
+      <button class="tab-btn" onclick="switchTab('verify')"   id="tab-verify">🔍 Verify Vote</button>
+      <button class="tab-btn" onclick="switchTab('export')"   id="tab-export">📥 Export</button>
+      <button class="tab-btn" onclick="switchTab('candidates')" id="tab-candidates">🖼 Candidates</button>
+      <button class="tab-btn" onclick="switchTab('election')" id="tab-election">🏁 Election</button>
+    </div>
+
+    <!-- ===== TAB: DASHBOARD ===== -->
+    <div class="tab-content active" id="tab-content-dashboard">
+
+      <!-- Vote Cards -->
+      <section class="cards-section">
+        <div class="vote-card" id="card-1">
+          <div class="card-glow glow-1"></div>
+          <div class="card-top">
+            <div class="candidate-photo" id="photo-0"><span class="photo-placeholder">🅐</span></div>
+            <div class="card-badge">FIELD 1</div>
+          </div>
+          <div class="party-name" id="name-1">Party A</div>
+          <div class="vote-count" id="votes-1">—</div>
+          <div class="vote-label">TOTAL VOTES</div>
+          <div class="bar-wrap"><div class="bar-fill bar-1" id="bar-1" style="width:0%"></div></div>
+          <div class="pct" id="pct-1">0%</div>
+        </div>
+        <div class="vote-card" id="card-2">
+          <div class="card-glow glow-2"></div>
+          <div class="card-top">
+            <div class="candidate-photo" id="photo-1"><span class="photo-placeholder">🅑</span></div>
+            <div class="card-badge">FIELD 2</div>
+          </div>
+          <div class="party-name" id="name-2">Party B</div>
+          <div class="vote-count c2" id="votes-2">—</div>
+          <div class="vote-label">TOTAL VOTES</div>
+          <div class="bar-wrap"><div class="bar-fill bar-2" id="bar-2" style="width:0%"></div></div>
+          <div class="pct" id="pct-2">0%</div>
+        </div>
+        <div class="vote-card" id="card-3">
+          <div class="card-glow glow-3"></div>
+          <div class="card-top">
+            <div class="candidate-photo" id="photo-2"><span class="photo-placeholder">🅒</span></div>
+            <div class="card-badge">FIELD 3</div>
+          </div>
+          <div class="party-name" id="name-3">Party C</div>
+          <div class="vote-count c3" id="votes-3">—</div>
+          <div class="vote-label">TOTAL VOTES</div>
+          <div class="bar-wrap"><div class="bar-fill bar-3" id="bar-3" style="width:0%"></div></div>
+          <div class="pct" id="pct-3">0%</div>
+        </div>
+      </section>
+
+      <!-- Winner Banner -->
+      <div class="winner-banner" id="winner-banner" style="display:none">
+        <span class="trophy">🏆</span><span id="winner-text">— LEADING —</span>
+      </div>
+
+      <!-- Turnout -->
+      <div class="turnout-section">
+        <div class="turnout-label">
+          <span>VOTER TURNOUT</span>
+          <span id="turnout-numbers">0 / 100 voters</span>
+        </div>
+        <div class="turnout-track">
+          <div class="turnout-fill" id="turnout-fill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <section class="charts-section">
+        <div class="chart-card">
+          <div class="chart-header"><span class="chart-title">VOTE DISTRIBUTION</span><span class="chart-sub">Pie Chart</span></div>
+          <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><span class="chart-title">VOTE TREND</span><span class="chart-sub">Last 50 entries</span></div>
+          <div class="chart-wrap"><canvas id="lineChart"></canvas></div>
+        </div>
+      </section>
+
+      <!-- Activity Log -->
+      <section class="log-section">
+        <div class="log-header">
+          <span class="log-title">▸ ACTIVITY LOG</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label class="notif-toggle"><input type="checkbox" id="notif-enabled" checked/> 🔔 Notifications</label>
+            <button class="clear-log" onclick="clearLog()">CLEAR</button>
+            <button class="refresh-btn" onclick="fetchAllData()">↻ REFRESH</button>
+          </div>
+        </div>
+        <div class="log-body" id="log-body">
+          <div class="log-entry init">Admin panel loaded. Waiting for data…</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===== TAB: CONFIG ===== -->
+    <div class="tab-content" id="tab-content-config">
+      <div class="tab-section">
+        <h2 class="section-title">⚙ ThingSpeak Configuration</h2>
+        <div class="form-grid">
+          <div class="field-group"><label>Channel ID</label><input type="text" id="cfg-channel" placeholder="e.g. 2987654"/></div>
+          <div class="field-group"><label>Read API Key</label><input type="text" id="cfg-apikey" placeholder="Your Read API Key"/></div>
+          <div class="field-group"><label>Party A Label</label><input type="text" id="cfg-p1" value="Party A"/></div>
+          <div class="field-group"><label>Party B Label</label><input type="text" id="cfg-p2" value="Party B"/></div>
+          <div class="field-group"><label>Party C Label</label><input type="text" id="cfg-p3" value="Party C"/></div>
+          <div class="field-group"><label>Auto-Refresh (sec)</label><input type="number" id="cfg-interval" value="30" min="10"/></div>
+          <div class="field-group"><label>Total Registered Voters</label><input type="number" id="cfg-voters" value="100" min="1"/></div>
+          <div class="field-group"><label>Change Admin Password</label><input type="password" id="cfg-newpass" placeholder="New password (leave blank to keep)"/></div>
+        </div>
+        <button class="save-btn" onclick="saveConfig()">💾 SAVE & CONNECT</button>
+      </div>
+    </div>
+
+    <!-- ===== TAB: VERIFY VOTE ===== -->
+    <div class="tab-content" id="tab-content-verify">
+      <div class="tab-section">
+        <h2 class="section-title">🔍 Vote Hash Verification</h2>
+        <p class="section-desc">Every vote cast generates a unique Hash ID. Voters can use this to confirm their vote was counted.</p>
+        <div class="verify-box">
+          <div class="field-group" style="flex:1">
+            <label>Enter Vote Hash ID</label>
+            <input type="text" id="verify-input" placeholder="e.g. VT-A3F9B2C1" style="text-transform:uppercase"/>
+          </div>
+          <button class="save-btn" onclick="verifyVote()" style="align-self:flex-end">🔍 VERIFY</button>
+        </div>
+        <div id="verify-result" class="verify-result"></div>
+
+        <h3 class="sub-title">All Vote Hashes This Session</h3>
+        <div class="hash-table-wrap">
+          <table class="hash-table">
+            <thead>
+              <tr><th>#</th><th>HASH ID</th><th>PARTY</th><th>TIME</th></tr>
+            </thead>
+            <tbody id="hash-table-body">
+              <tr><td colspan="4" class="empty-row">No votes recorded yet in this session</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TAB: EXPORT ===== -->
+    <div class="tab-content" id="tab-content-export">
+      <div class="tab-section">
+        <h2 class="section-title">📥 Export Results</h2>
+        <p class="section-desc">Download official election results in multiple formats.</p>
+        <div class="export-cards">
+          <div class="export-card">
+            <div class="export-icon">📄</div>
+            <div class="export-title">PDF Report</div>
+            <div class="export-desc">Formatted report with vote bars, turnout, winner declaration, and timestamp</div>
+            <button class="export-action pdf-btn" onclick="exportPDF()">DOWNLOAD PDF</button>
+          </div>
+          <div class="export-card">
+            <div class="export-icon">📊</div>
+            <div class="export-title">Excel Spreadsheet</div>
+            <div class="export-desc">Full data including vote counts, percentages, turnout, and complete hash log</div>
+            <button class="export-action xls-btn" onclick="exportExcel()">DOWNLOAD EXCEL</button>
+          </div>
+          <div class="export-card">
+            <div class="export-icon">📋</div>
+            <div class="export-title">CSV Data</div>
+            <div class="export-desc">Raw comma-separated vote data for use in any spreadsheet or analysis tool</div>
+            <button class="export-action csv-btn" onclick="exportCSV()">DOWNLOAD CSV</button>
+          </div>
+        </div>
+
+        <h3 class="sub-title" style="margin-top:32px">📧 Email Report</h3>
+        <div class="verify-box">
+          <div class="field-group" style="flex:1">
+            <label>Recipient Email</label>
+            <input type="email" id="admin-email" placeholder="admin@example.com"/>
+          </div>
+          <button class="save-btn" onclick="sendEmailReport()" style="align-self:flex-end">📧 SEND</button>
+        </div>
+        <p class="section-desc" style="margin-top:8px">Opens your default email client with a pre-filled results report.</p>
+      </div>
+    </div>
+
+    <!-- ===== TAB: CANDIDATES ===== -->
+    <div class="tab-content" id="tab-content-candidates">
+      <div class="tab-section">
+        <h2 class="section-title">🖼 Candidate Photos & Labels</h2>
+        <p class="section-desc">Upload photos for each party/candidate. These appear on the public results page and admin dashboard.</p>
+        <div class="candidate-cards">
+          <div class="candidate-edit-card">
+            <div class="cand-photo-preview" id="cand-preview-0"><span>🅐</span></div>
+            <div class="cand-name" id="cand-name-0">Party A</div>
+            <label class="upload-label">
+              📷 Upload Photo
+              <input type="file" accept="image/*" onchange="setCandidateImage(0, this)" style="display:none"/>
+            </label>
+            <div class="cand-field-badge">ThingSpeak Field 1</div>
+          </div>
+          <div class="candidate-edit-card">
+            <div class="cand-photo-preview" id="cand-preview-1"><span>🅑</span></div>
+            <div class="cand-name" id="cand-name-1">Party B</div>
+            <label class="upload-label">
+              📷 Upload Photo
+              <input type="file" accept="image/*" onchange="setCandidateImage(1, this)" style="display:none"/>
+            </label>
+            <div class="cand-field-badge">ThingSpeak Field 2</div>
+          </div>
+          <div class="candidate-edit-card">
+            <div class="cand-photo-preview" id="cand-preview-2"><span>🅒</span></div>
+            <div class="cand-name" id="cand-name-2">Party C</div>
+            <label class="upload-label">
+              📷 Upload Photo
+              <input type="file" accept="image/*" onchange="setCandidateImage(2, this)" style="display:none"/>
+            </label>
+            <div class="cand-field-badge">ThingSpeak Field 3</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TAB: ELECTION CONTROL ===== -->
+    <div class="tab-content" id="tab-content-election">
+      <div class="tab-section">
+        <h2 class="section-title">🏁 Election Control</h2>
+
+        <!-- Voting Window Status -->
+        <div class="election-status-panel" id="timer-status" style="margin-bottom:24px; padding:16px 20px; background:var(--surface2); border:1px solid var(--border); font-size:13px; color:var(--text-dim); line-height:1.7;">
+          Loading status…
+        </div>
+
+        <div class="election-grid">
+          <div class="election-card">
+            <h3>⏱ Voting Timer</h3>
+            <p>Set a specific date &amp; time when voting closes. The public page will automatically switch to CLOSED when the timer expires — voters cannot see vote counts at any point.</p>
+            <div class="field-group">
+              <label>Voting Ends At</label>
+              <input type="datetime-local" id="end-time-input"/>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="save-btn" onclick="setElectionTimer()">⏱ SET TIMER</button>
+              <button class="danger-btn" onclick="clearElectionTimer()">✕ CLEAR TIMER</button>
+            </div>
+            <div class="timer-display" id="timer-display">No timer set</div>
+          </div>
+
+          <div class="election-card">
+            <h3>🎊 End Election Manually</h3>
+            <p>Immediately close voting and switch the public page to CLOSED state. Use this to end the election before the timer expires, or if no timer was set.</p>
+            <p style="color:var(--yellow);font-size:11px">⚠ Note: Vote counts per party are NEVER shown on the public page — only on this admin panel.</p>
+            <button class="confetti-btn" onclick="endElection()">🏁 END ELECTION NOW</button>
+          </div>
+
+          <div class="election-card danger">
+            <h3>⚠ Reset All Data</h3>
+            <p>Clears all locally stored vote hashes, timer settings, and election state. ThingSpeak data is NOT affected. Use to start a fresh election session.</p>
+            <button class="danger-btn" onclick="resetVoteData()">🗑 RESET ALL LOCAL DATA</button>
+          </div>
+        </div>
+
+        <!-- Info box -->
+        <div style="margin-top:24px; padding:16px 20px; background:rgba(0,170,255,0.05); border:1px solid rgba(0,170,255,0.2); font-size:12px; color:var(--text-dim); line-height:1.8;">
+          <strong style="color:var(--blue)">ℹ How vote privacy works:</strong><br/>
+          The public page (<code>index.html</code>) shows <strong>only total votes cast and turnout %</strong> — never per-party counts or percentages.<br/>
+          This prevents voters from sharing "Party X is winning" before the election closes, which could influence others.<br/>
+          <strong>Admins</strong> on this panel can see full per-party breakdown at all times for monitoring.
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end admin-content -->
+
+  <script src="shared.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
