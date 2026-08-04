@@ -3,7 +3,7 @@
 Two separate pages: public results + password-protected admin panel.
 
 
-([url](https://ragini-telange.github.io/Smart_EVM/))
+([Deployed Link](https://ragini-telange.github.io/Smart_EVM/))
 
 ---
 
